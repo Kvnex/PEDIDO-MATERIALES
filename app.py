@@ -152,8 +152,7 @@ def index():
                         "vale": numero_vale,
                         "embarcacion": row[2],
                         "programa": row[3],
-                        "sede":row[4],
-                        "estado": str(row[5]).strip().upper()
+                        "estado": str(row[4]).strip().upper()
                     })
 
                 return generar_html(resultados)
