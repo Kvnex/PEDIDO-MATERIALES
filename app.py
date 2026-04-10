@@ -3,7 +3,7 @@ import pandas as pd
 
 app = Flask(__name__)
 
-# 🔥 EXCEL DESDE GITHUB (CAMBIA SOLO SI CAMBIAS NOMBRE)
+# 🔥 EXCEL DESDE GITHUB
 ruta_excel = "https://raw.githubusercontent.com/Kvnex/PEDIDO-MATERIALES/main/PEDIDOS.xlsx"
 
 def generar_html(resultados=None):
@@ -31,9 +31,9 @@ def generar_html(resultados=None):
                 filas_html += f"""
                 <div class="resultado {color_class}">
                     <p><b>Vale:</b> {r['vale']}</p>
+                    <p><b>Sede:</b> {r['sede']}</p>
                     <p><b>Embarcación:</b> {r['embarcacion']}</p>
                     <p><b>Programa:</b> {r['programa']}</p>
-                      <p><b>Sede:</b> {r['sede']}</p>
                     <p><b>Estado:</b> {estado}</p>
                 </div>
                 """
@@ -95,6 +95,7 @@ def generar_html(resultados=None):
         .green {{ background: #28a745; }}
         .yellow {{ background: #ffc107; color: black; }}
         .red {{ background: #dc3545; }}
+        .gray {{ background: #6c757d; }}
 
         .leyenda {{
             margin-top: 20px;
@@ -142,7 +143,7 @@ def index():
         try:
             df = pd.read_excel(ruta_excel, header=None)
 
-            # 🔥 BUSCAR TODOS LOS VALES REPETIDOS
+            # 🔥 BUSCAR VALES
             filas = df[df.iloc[:,1].astype(str) == str(numero_vale)]
 
             if not filas.empty:
@@ -151,10 +152,10 @@ def index():
                 for _, row in filas.iterrows():
                     resultados.append({
                         "vale": numero_vale,
-                        "embarcacion": row[2],
-                        "programa": row[3],
-                        "sede":row[4],
-                        "estado": str(row[5]).strip().upper()
+                        "sede": row[4],          # ✅ Columna E
+                        "embarcacion": row[2],   # Columna C
+                        "programa": row[3],      # Columna D
+                        "estado": str(row[5]).strip().upper()  # ✅ Columna F
                     })
 
                 return generar_html(resultados)
