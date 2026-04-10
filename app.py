@@ -17,16 +17,15 @@ def generar_html(resultados=None):
 
             for r in resultados:
                 estado = str(r["estado"]).upper().strip()
+                estado_original = str(r["estado"]).strip()  # 👈 este se mostrará
 
                 # 🟢 VERDE
                 if estado in ["ATENDIDO", "COMPLETO"]:
                     color_class = "green"
-                    estado = "ATENDIDO"
 
                 # 🟡 AMARILLO
                 elif estado in ["EN CURSO", "PARCIAL", "PC"]:
                     color_class = "yellow"
-                    estado = "EN CURSO"
 
                 # 🔴 ROJO
                 elif estado in ["NO ATENDIDO"]:
@@ -42,7 +41,7 @@ def generar_html(resultados=None):
                     <p><b>Embarcación:</b> {r['embarcacion']}</p>
                     <p><b>Programa:</b> {r['programa']}</p>
                     <p><b>Sede:</b> {r['sede']}</p>
-                    <p><b>Estado:</b> {estado}</p>
+                    <p><b>Estado:</b> {estado_original}</p>
                 </div>
                 """
 
@@ -162,8 +161,8 @@ def index():
                         "vale": numero_vale,
                         "embarcacion": row[2],
                         "programa": row[3],
-                        "sede": row[4],  # ✅ SEDE
-                        "estado": row[5] # ✅ ESTADO CORREGIDO
+                        "sede": row[4],
+                        "estado": row[5]
                     })
 
                 return generar_html(resultados)
