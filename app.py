@@ -3,7 +3,7 @@ import pandas as pd
 
 app = Flask(__name__)
 
-# 🔥 EXCEL DESDE GITHUB (CAMBIA SOLO SI CAMBIAS NOMBRE)
+# 🔥 EXCEL DESDE GITHUB
 ruta_excel = "https://raw.githubusercontent.com/Kvnex/PEDIDO-MATERIALES/main/PEDIDOS.xlsx"
 
 def generar_html(resultados=None):
@@ -142,7 +142,7 @@ def index():
         try:
             df = pd.read_excel(ruta_excel, header=None)
 
-            # 🔥 BUSCAR TODOS LOS VALES REPETIDOS
+            # 🔥 BUSCAR TODOS LOS VALES
             filas = df[df.iloc[:,1].astype(str) == str(numero_vale)]
 
             if not filas.empty:
@@ -153,8 +153,8 @@ def index():
                         "vale": numero_vale,
                         "embarcacion": row[2],
                         "programa": row[3],
-                        "sede": row[4],
-                        "estado": str(row[5]).strip().upper()
+                        "sede": row[4],          # ✅ NUEVO
+                        "estado": str(row[5]).strip().upper()  # ✅ CORREGIDO
                     })
 
                 return generar_html(resultados)
