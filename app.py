@@ -16,15 +16,23 @@ def generar_html(resultados=None):
             filas_html = ""
 
             for r in resultados:
-                estado = r["estado"]
+                estado = str(r["estado"]).upper().strip()
 
-                if estado == "ATENDIDO":
+                # 🟢 VERDE
+                if estado in ["ATENDIDO", "COMPLETO"]:
                     color_class = "green"
-                elif estado in ["PC", "EN CURSO"]:
+                    estado = "ATENDIDO"
+
+                # 🟡 AMARILLO
+                elif estado in ["EN CURSO", "PARCIAL", "PC"]:
                     color_class = "yellow"
                     estado = "EN CURSO"
-                elif estado == "NO ATENDIDO":
+
+                # 🔴 ROJO
+                elif estado in ["NO ATENDIDO"]:
                     color_class = "red"
+
+                # ⚪ OTROS
                 else:
                     color_class = "gray"
 
@@ -95,6 +103,7 @@ def generar_html(resultados=None):
         .green {{ background: #28a745; }}
         .yellow {{ background: #ffc107; color: black; }}
         .red {{ background: #dc3545; }}
+        .gray {{ background: #6c757d; }}
 
         .leyenda {{
             margin-top: 20px;
@@ -123,8 +132,8 @@ def generar_html(resultados=None):
     {contenido}
 
     <div class="leyenda">
-        <div class="green">ATENDIDO</div>
-        <div class="yellow">EN CURSO</div>
+        <div class="green">ATENDIDO / COMPLETO</div>
+        <div class="yellow">EN CURSO / PARCIAL</div>
         <div class="red">NO ATENDIDO</div>
     </div>
 
@@ -142,7 +151,7 @@ def index():
         try:
             df = pd.read_excel(ruta_excel, header=None)
 
-            # 🔥 BUSCAR TODOS LOS VALES
+            # 🔥 BUSCAR VALES
             filas = df[df.iloc[:,1].astype(str) == str(numero_vale)]
 
             if not filas.empty:
@@ -153,8 +162,8 @@ def index():
                         "vale": numero_vale,
                         "embarcacion": row[2],
                         "programa": row[3],
-                        "sede": row[4],          # ✅ NUEVO
-                        "estado": str(row[5]).strip().upper()  # ✅ CORREGIDO
+                        "sede": row[4],  # ✅ SEDE
+                        "estado": row[5] # ✅ ESTADO CORREGIDO
                     })
 
                 return generar_html(resultados)
