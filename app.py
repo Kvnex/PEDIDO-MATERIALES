@@ -33,6 +33,7 @@ def generar_html(resultados=None):
                     <p><b>Vale:</b> {r['vale']}</p>
                     <p><b>Embarcación:</b> {r['embarcacion']}</p>
                     <p><b>Programa:</b> {r['programa']}</p>
+                    <p><b>Sede:</b> {r['sede']}</p>
                     <p><b>Estado:</b> {estado}</p>
                 </div>
                 """
@@ -152,7 +153,8 @@ def index():
                         "vale": numero_vale,
                         "embarcacion": row[2],
                         "programa": row[3],
-                        "estado": str(row[4]).strip().upper()
+                        "sede": row[4],
+                        "estado": str(row[5]).strip().upper()
                     })
 
                 return generar_html(resultados)
