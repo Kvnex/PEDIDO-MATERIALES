@@ -3,7 +3,7 @@ import pandas as pd
 
 app = Flask(__name__)
 
-# 🔥 EXCEL DESDE GITHUB
+# 🔥 EXCEL DESDE GITHUB (CAMBIA SOLO SI CAMBIAS NOMBRE)
 ruta_excel = "https://raw.githubusercontent.com/Kvnex/PEDIDO-MATERIALES/main/PEDIDOS.xlsx"
 
 def generar_html(resultados=None):
@@ -31,7 +31,6 @@ def generar_html(resultados=None):
                 filas_html += f"""
                 <div class="resultado {color_class}">
                     <p><b>Vale:</b> {r['vale']}</p>
-                    <p><b>Sede:</b> {r['sede']}</p> <!-- 🔥 NUEVO -->
                     <p><b>Embarcación:</b> {r['embarcacion']}</p>
                     <p><b>Programa:</b> {r['programa']}</p>
                     <p><b>Estado:</b> {estado}</p>
@@ -142,6 +141,7 @@ def index():
         try:
             df = pd.read_excel(ruta_excel, header=None)
 
+            # 🔥 BUSCAR TODOS LOS VALES REPETIDOS
             filas = df[df.iloc[:,1].astype(str) == str(numero_vale)]
 
             if not filas.empty:
@@ -150,10 +150,10 @@ def index():
                 for _, row in filas.iterrows():
                     resultados.append({
                         "vale": numero_vale,
-                        "sede": row[4],          # ✅ COLUMNA E
                         "embarcacion": row[2],
                         "programa": row[3],
-                        "estado": str(row[5]).strip().upper()  # ✅ COLUMNA F
+                        "sede":row[4],
+                        "estado": str(row[5]).strip().upper()
                     })
 
                 return generar_html(resultados)
