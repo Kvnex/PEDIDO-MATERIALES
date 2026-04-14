@@ -32,7 +32,18 @@ ESTILOS = """
     .btn-green { background: #27ae60; color: white; width: 100%; font-size: 16px; margin-top: 20px; padding: 12px; border-radius: 8px; }
     .btn-add { background: #f39c12; color: white; margin-top: 10px; }
     .btn-delete { background: #e74c3c; color: white; padding: 5px 10px; font-size: 11px; border-radius: 4px; }
-    .btn-delete:hover { background: #c0392b; }
+    
+    /* Estilos del Modal de Password */
+    #modalPass {
+        display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
+        background-color: rgba(0,0,0,0.6);
+    }
+    .modal-content {
+        background-color: white; margin: 15% auto; padding: 20px; border-radius: 10px; width: 300px; text-align: center;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    }
+    .input-pass { width: 90%; padding: 10px; margin: 15px 0; border: 1px solid #ccc; border-radius: 5px; font-size: 18px; text-align: center; }
+
     .form-row { display: flex; gap: 15px; margin-bottom: 15px; }
     .form-group { flex: 1; }
     label { font-size: 11px; font-weight: bold; color: #444; display: block; text-transform: uppercase; margin-bottom: 4px; }
@@ -43,8 +54,8 @@ ESTILOS = """
     .input-tabla { width: 100%; border: none; padding: 10px; box-sizing: border-box; outline: none; font-size: 14px; background: transparent; }
     .col-item { width: 45px; text-align: center; background: #f9f9f9; font-weight: bold; color: #1e3c72; }
     .badge { padding: 5px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; }
-    .bg-ok { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-    .bg-wait { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .bg-ok { background: #d4edda; color: #155724; }
+    .bg-wait { background: #f8d7da; color: #721c24; }
     .prio-urgente { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
     .prio-normal { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
 </style>
@@ -95,7 +106,7 @@ BUSCAR_HTML = ESTILOS + """
     </form>
     {% if pedido %}
     <div style="border: 2px solid #1e3c72; padding: 15px; border-radius: 10px; position: relative; background: #fff;">
-        <div onclick="loginAdm({{ pedido.id }})" style="position: absolute; right: 10px; top: 10px; cursor: pointer; color: #bbb; font-size: 10px;">[ ADM ]</div>
+        <div onclick="abrirModal()" style="position: absolute; right: 10px; top: 10px; cursor: pointer; color: #bbb; font-size: 10px;">[ ADM ]</div>
         <h3>VALE #{{ pedido.id }}</h3>
         <p style="font-size: 13px; margin: 5px 0;"><b>FECHA:</b> {{ pedido.fecha }}</p>
         <p style="font-size: 13px; margin: 5px 0;"><b>EMBARCACIÓN:</b> {{ pedido.embarcacion }}</p>
@@ -118,9 +129,34 @@ BUSCAR_HTML = ESTILOS + """
             </tbody>
         </table>
     </div>
+
+    <div id="modalPass">
+        <div class="modal-content">
+            <h4 style="margin:0; color:#1e3c72;">Acceso ADM</h4>
+            <input type="password" id="passInput" class="input-pass" placeholder="Clave">
+            <br>
+            <button class="btn btn-blue" onclick="validarPass({{ pedido.id }})">Entrar</button>
+            <button class="btn" style="background:#ccc;" onclick="cerrarModal()">Cancelar</button>
+        </div>
+    </div>
+
     {% elif error %}<p style="color: red; font-weight: bold; text-align: center;">{{ error }}</p>{% endif %}
 </div>
-<script>function loginAdm(id) { if (prompt("Clave ADM:") === "Kvnex123") { window.location.href = "/admin/" + id; } }</script>
+<script>
+    function abrirModal() { document.getElementById('modalPass').style.display = 'block'; document.getElementById('passInput').focus(); }
+    function cerrarModal() { document.getElementById('modalPass').style.display = 'none'; }
+    function validarPass(id) {
+        let p = document.getElementById('passInput').value;
+        if (p === "Kvnex123") {
+            window.location.href = "/admin/" + id;
+        } else {
+            alert("Clave incorrecta");
+            document.getElementById('passInput').value = "";
+        }
+    }
+    // Cerrar si hace click fuera
+    window.onclick = function(event) { if (event.target == document.getElementById('modalPass')) cerrarModal(); }
+</script>
 """
 
 ADMIN_HTML = ESTILOS + """
@@ -152,7 +188,7 @@ ADMIN_HTML = ESTILOS + """
 </div>
 <script>
     function eliminarFila(materialId, pedidoId) {
-        if (confirm("¿Seguro que quieres eliminar este material del pedido?")) {
+        if (confirm("¿Seguro que quieres eliminar este material?")) {
             window.location.href = "/eliminar_material/" + materialId + "?pedido_id=" + pedidoId;
         }
     }
@@ -211,9 +247,7 @@ def admin_panel(p_id):
 @app.route("/eliminar_material/<int:m_id>")
 def eliminar_material(m_id):
     p_id = request.args.get('pedido_id')
-    # Eliminamos el material de Supabase
     supabase.table("materiales").delete().eq("id", m_id).execute()
-    # Regresamos al panel ADM del mismo pedido
     return redirect(url_for('admin_panel', p_id=p_id))
 
 if __name__ == "__main__":
