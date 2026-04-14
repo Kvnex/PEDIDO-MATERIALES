@@ -311,11 +311,11 @@ ADMIN_HTML = ESTILOS_VIVOS + """
         <div class="form-row">
             <div class="form-group">
                 <label>Órdenes / Pedidos de Compra (PCs)</label>
-                <input type="text" name="pedido_compra" value="{{ pedido.pedido_compra or '' }}" placeholder="Ej: PC-001, PC-045">
+                <input type="text" name="pedido_compra" value="{{ pedido.pedido_compra or '' }}">
             </div>
             <div class="form-group">
                 <label>Sede o Destino de Entrega</label>
-                <input type="text" name="sede" value="{{ pedido.sede or '' }}" placeholder="Ej: Chimbote / Taller">
+                <input type="text" name="sede" value="{{ pedido.sede or '' }}>
             </div>
         </div>
         
