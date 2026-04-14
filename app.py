@@ -31,6 +31,8 @@ ESTILOS = """
     .btn-blue { background: #1e3c72; color: white; }
     .btn-green { background: #27ae60; color: white; width: 100%; font-size: 16px; margin-top: 20px; padding: 12px; border-radius: 8px; }
     .btn-add { background: #f39c12; color: white; margin-top: 10px; }
+    .btn-delete { background: #e74c3c; color: white; padding: 5px 10px; font-size: 11px; border-radius: 4px; }
+    .btn-delete:hover { background: #c0392b; }
     .form-row { display: flex; gap: 15px; margin-bottom: 15px; }
     .form-group { flex: 1; }
     label { font-size: 11px; font-weight: bold; color: #444; display: block; text-transform: uppercase; margin-bottom: 4px; }
@@ -128,11 +130,19 @@ ADMIN_HTML = ESTILOS + """
         <label style="color: white;">PEDIDOS DE COMPRA:</label><input type="text" name="pedido_compra" value="{{ pedido.pedido_compra or '' }}">
         <br><br><label style="color: white;">SEDE:</label><input type="text" name="sede" value="{{ pedido.sede or '' }}">
         <table style="background: white; color: black; margin-top: 15px;">
-            <thead><tr><th style="width: 40px;">#</th><th>MATERIAL</th><th style="width: 60px;">OK</th></tr></thead>
+            <thead><tr><th style="width: 40px;">#</th><th>MATERIAL</th><th style="width: 60px;">OK</th><th style="width: 60px;">QUITAR</th></tr></thead>
             <tbody>
                 {% for m in materiales %}
-                <tr><td class="col-item">{{ m.item }}</td><td style="padding: 8px; font-size: 13px;">{{ m.descripcion }}</td>
-                <td style="text-align: center;"><input type="checkbox" name="mat_{{ m.id }}" style="transform: scale(1.3);" {{ 'checked' if m.entregado }}></td></tr>
+                <tr>
+                    <td class="col-item">{{ m.item }}</td>
+                    <td style="padding: 8px; font-size: 13px;">{{ m.descripcion }}</td>
+                    <td style="text-align: center;">
+                        <input type="checkbox" name="mat_{{ m.id }}" style="transform: scale(1.3);" {{ 'checked' if m.entregado }}>
+                    </td>
+                    <td style="text-align: center;">
+                        <button type="button" class="btn btn-delete" onclick="eliminarFila({{ m.id }}, {{ pedido.id }})">X</button>
+                    </td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -140,6 +150,13 @@ ADMIN_HTML = ESTILOS + """
         <div style="text-align: center; margin-top: 15px;"><a href="/buscar?id={{ pedido.id }}" style="color: #ccc; text-decoration: none; font-size: 12px;">← Cancelar</a></div>
     </form>
 </div>
+<script>
+    function eliminarFila(materialId, pedidoId) {
+        if (confirm("¿Seguro que quieres eliminar este material del pedido?")) {
+            window.location.href = "/eliminar_material/" + materialId + "?pedido_id=" + pedidoId;
+        }
+    }
+</script>
 """
 
 # --- RUTAS ---
@@ -190,6 +207,14 @@ def admin_panel(p_id):
     res_p = supabase.table("pedidos").select("*").eq("id", p_id).execute()
     res_m = supabase.table("materiales").select("*").eq("pedido_id", p_id).order("item").execute()
     return render_template_string(ADMIN_HTML, pedido=res_p.data[0], materiales=res_m.data)
+
+@app.route("/eliminar_material/<int:m_id>")
+def eliminar_material(m_id):
+    p_id = request.args.get('pedido_id')
+    # Eliminamos el material de Supabase
+    supabase.table("materiales").delete().eq("id", m_id).execute()
+    # Regresamos al panel ADM del mismo pedido
+    return redirect(url_for('admin_panel', p_id=p_id))
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=5000)
