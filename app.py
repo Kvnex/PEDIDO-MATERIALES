@@ -165,7 +165,7 @@ REGISTRO_HTML = ESTILOS_VIVOS + """
         <div class="form-row">
             <div class="form-group">
                 <label>Embarcación / Nave</label>
-                <input type="text" name="embarcacion" required placeholder="Ej: B/P KVNEX I">
+                <input type="text" name="embarcacion" required>
             </div>
             <div style="width: 180px;">
                 <label>Prioridad</label>
@@ -177,7 +177,7 @@ REGISTRO_HTML = ESTILOS_VIVOS + """
         </div>
         <div class="form-group">
             <label>Solicitado por (Nombre Completo)</label>
-            <input type="text" name="solicitado" required placeholder="Ej: Juan Pérez - Jefe de Máquinas">
+            <input type="text" name="solicitado" required>
         </div>
 
         <h3>Lista de Materiales Solicitados</h3>
@@ -193,8 +193,8 @@ REGISTRO_HTML = ESTILOS_VIVOS + """
                 {% for i in range(1, 6) %}
                 <tr>
                     <td class="col-item">{{ i }}</td>
-                    <td><input type="text" name="cant_{{ i }}" class="input-tabla" placeholder="Ej: 2 GL"></td>
-                    <td><input type="text" name="desc_{{ i }}" class="input-tabla" placeholder="Ej: Pintura Antifouling Color Rojo"></td>
+                    <td><input type="text" name="cant_{{ i }}" class="input-tabla"></td>
+                    <td><input type="text" name="desc_{{ i }}" class="input-tabla"></td>
                 </tr>
                 {% endfor %}
             </tbody>
