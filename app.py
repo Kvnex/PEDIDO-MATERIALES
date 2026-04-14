@@ -1,10 +1,11 @@
-from flask import Flask, render_template_string, request, redirect, url_for
+from flask import Flask, render_template_string, request, redirect, url_for, session
 from supabase import create_client, Client
 from datetime import datetime, timedelta, timezone
 import os
 
 app = Flask(__name__)
-app.secret_key = "kvnex_marine_key"
+# Cambia esto por algo aleatorio para asegurar las sesiones
+app.secret_key = "kvnex_ultra_secret_key_99" 
 
 # === CONFIGURACIÓN DE SUPABASE ===
 SUPABASE_URL = "https://uyibbpixwpaxwgcvvgka.supabase.co"
@@ -33,14 +34,12 @@ ESTILOS = """
     .btn-add { background: #f39c12; color: white; margin-top: 10px; }
     .btn-delete { background: #e74c3c; color: white; padding: 5px 10px; font-size: 11px; border-radius: 4px; }
     
-    /* Estilos del Modal de Password */
     #modalPass {
         display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
         background-color: rgba(0,0,0,0.6);
     }
     .modal-content {
         background-color: white; margin: 15% auto; padding: 20px; border-radius: 10px; width: 300px; text-align: center;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.5);
     }
     .input-pass { width: 90%; padding: 10px; margin: 15px 0; border: 1px solid #ccc; border-radius: 5px; font-size: 18px; text-align: center; }
 
@@ -98,7 +97,12 @@ REGISTRO_HTML = ESTILOS + """
 
 BUSCAR_HTML = ESTILOS + """
 <div class="container">
-    <div class="nav"><a href="/" class="btn btn-blue">📝 NUEVO REGISTRO</a></div>
+    <div class="nav">
+        <a href="/" class="btn btn-blue">📝 NUEVO REGISTRO</a>
+        {% if session.admin_auth %}
+        <a href="/logout" class="btn" style="background:#e74c3c; color:white;">SALIR ADM</a>
+        {% endif %}
+    </div>
     <h2>Seguimiento de Vale</h2>
     <form method="GET" style="display: flex; gap: 10px; margin-bottom: 20px;">
         <input type="number" name="id" placeholder="N° de Vale" style="flex: 1;" required>
@@ -106,7 +110,11 @@ BUSCAR_HTML = ESTILOS + """
     </form>
     {% if pedido %}
     <div style="border: 2px solid #1e3c72; padding: 15px; border-radius: 10px; position: relative; background: #fff;">
+        {% if not session.admin_auth %}
         <div onclick="abrirModal()" style="position: absolute; right: 10px; top: 10px; cursor: pointer; color: #bbb; font-size: 10px;">[ ADM ]</div>
+        {% else %}
+        <a href="/admin/{{ pedido.id }}" style="position: absolute; right: 10px; top: 10px; color: #27ae60; font-size: 10px; font-weight:bold; text-decoration:none;">[ GESTIONAR ]</a>
+        {% endif %}
         <h3>VALE #{{ pedido.id }}</h3>
         <p style="font-size: 13px; margin: 5px 0;"><b>FECHA:</b> {{ pedido.fecha }}</p>
         <p style="font-size: 13px; margin: 5px 0;"><b>EMBARCACIÓN:</b> {{ pedido.embarcacion }}</p>
@@ -132,36 +140,31 @@ BUSCAR_HTML = ESTILOS + """
 
     <div id="modalPass">
         <div class="modal-content">
-            <h4 style="margin:0; color:#1e3c72;">Acceso ADM</h4>
-            <input type="password" id="passInput" class="input-pass" placeholder="Clave">
-            <br>
-            <button class="btn btn-blue" onclick="validarPass({{ pedido.id }})">Entrar</button>
-            <button class="btn" style="background:#ccc;" onclick="cerrarModal()">Cancelar</button>
+            <h4 style="margin:10px; color:#1e3c72;">Acceso ADM</h4>
+            <form action="/login_adm" method="POST">
+                <input type="hidden" name="pedido_id" value="{{ pedido.id }}">
+                <input type="password" name="clave" class="input-pass" placeholder="Clave" autofocus required>
+                <br>
+                <button type="submit" class="btn btn-blue">Entrar</button>
+                <button type="button" class="btn" style="background:#ccc;" onclick="cerrarModal()">Cancelar</button>
+            </form>
         </div>
     </div>
-
     {% elif error %}<p style="color: red; font-weight: bold; text-align: center;">{{ error }}</p>{% endif %}
 </div>
 <script>
-    function abrirModal() { document.getElementById('modalPass').style.display = 'block'; document.getElementById('passInput').focus(); }
+    function abrirModal() { document.getElementById('modalPass').style.display = 'block'; }
     function cerrarModal() { document.getElementById('modalPass').style.display = 'none'; }
-    function validarPass(id) {
-        let p = document.getElementById('passInput').value;
-        if (p === "Kvnex123") {
-            window.location.href = "/admin/" + id;
-        } else {
-            alert("Clave incorrecta");
-            document.getElementById('passInput').value = "";
-        }
-    }
-    // Cerrar si hace click fuera
     window.onclick = function(event) { if (event.target == document.getElementById('modalPass')) cerrarModal(); }
 </script>
 """
 
 ADMIN_HTML = ESTILOS + """
 <div class="container" style="background: #2c3e50; color: white;">
-    <h3>Gestión ADM - Vale #{{ pedido.id }}</h3>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3>Gestión ADM - Vale #{{ pedido.id }}</h3>
+        <a href="/logout" style="color:#e74c3c; font-size:12px; font-weight:bold;">CERRAR SESIÓN ADM</a>
+    </div>
     <form method="POST">
         <label style="color: white;">PEDIDOS DE COMPRA:</label><input type="text" name="pedido_compra" value="{{ pedido.pedido_compra or '' }}">
         <br><br><label style="color: white;">SEDE:</label><input type="text" name="sede" value="{{ pedido.sede or '' }}">
@@ -183,7 +186,7 @@ ADMIN_HTML = ESTILOS + """
             </tbody>
         </table>
         <button type="submit" class="btn btn-green">💾 GUARDAR CAMBIOS</button>
-        <div style="text-align: center; margin-top: 15px;"><a href="/buscar?id={{ pedido.id }}" style="color: #ccc; text-decoration: none; font-size: 12px;">← Cancelar</a></div>
+        <div style="text-align: center; margin-top: 15px;"><a href="/buscar?id={{ pedido.id }}" style="color: #ccc; text-decoration: none; font-size: 12px;">← Volver al Vale</a></div>
     </form>
 </div>
 <script>
@@ -199,15 +202,28 @@ ADMIN_HTML = ESTILOS + """
 @app.route("/")
 def index(): return render_template_string(REGISTRO_HTML)
 
+@app.route("/login_adm", methods=["POST"])
+def login_adm():
+    clave = request.form.get("clave")
+    p_id = request.form.get("pedido_id")
+    if clave == "Kvnex123":
+        session['admin_auth'] = True
+        return redirect(url_for('admin_panel', p_id=p_id))
+    else:
+        return "<script>alert('Clave incorrecta'); window.history.back();</script>"
+
+@app.route("/logout")
+def logout():
+    session.pop('admin_auth', None)
+    return redirect(url_for('buscar'))
+
 @app.route("/guardar_pedido", methods=["POST"])
 def guardar_pedido():
     f = request.form
     tz_peru = timezone(timedelta(hours=-5))
     fecha = datetime.now(tz_peru).strftime("%d/%m/%Y %H:%M")
-    
     res_p = supabase.table("pedidos").insert({"fecha": fecha, "embarcacion": f['embarcacion'], "prioridad": f['prioridad'], "solicitado_por": f['solicitado']}).execute()
     p_id = res_p.data[0]['id']
-    
     mats = []
     item_n = 1
     for key in f.keys():
@@ -218,7 +234,7 @@ def guardar_pedido():
                 mats.append({"pedido_id": p_id, "item": item_n, "cantidad": c, "descripcion": d})
                 item_n += 1
     if mats: supabase.table("materiales").insert(mats).execute()
-    return f"<script>alert('Vale N° {p_id} guardado correctamente'); window.location.href='/';</script>"
+    return f"<script>alert('Vale N° {p_id} guardado'); window.location.href='/';</script>"
 
 @app.route("/buscar")
 def buscar():
@@ -232,6 +248,10 @@ def buscar():
 
 @app.route("/admin/<int:p_id>", methods=["GET", "POST"])
 def admin_panel(p_id):
+    # SEGURIDAD: Verificar si tiene sesión activa
+    if not session.get('admin_auth'):
+        return redirect(url_for('buscar', id=p_id))
+
     if request.method == "POST":
         supabase.table("pedidos").update({"pedido_compra": request.form['pedido_compra'], "sede": request.form['sede']}).eq("id", p_id).execute()
         res_m = supabase.table("materiales").select("id").eq("pedido_id", p_id).execute()
@@ -246,6 +266,8 @@ def admin_panel(p_id):
 
 @app.route("/eliminar_material/<int:m_id>")
 def eliminar_material(m_id):
+    if not session.get('admin_auth'):
+        return redirect(url_for('buscar'))
     p_id = request.args.get('pedido_id')
     supabase.table("materiales").delete().eq("id", m_id).execute()
     return redirect(url_for('admin_panel', p_id=p_id))
