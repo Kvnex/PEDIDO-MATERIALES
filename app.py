@@ -1,6 +1,7 @@
 from flask import Flask, render_template_string, request, redirect, url_for
 from supabase import create_client, Client
 from datetime import datetime, timedelta, timezone
+import os
 
 app = Flask(__name__)
 app.secret_key = "kvnex_marine_key"
@@ -95,7 +96,8 @@ BUSCAR_HTML = ESTILOS + """
         <div onclick="loginAdm({{ pedido.id }})" style="position: absolute; right: 10px; top: 10px; cursor: pointer; color: #bbb; font-size: 10px;">[ ADM ]</div>
         <h3>VALE #{{ pedido.id }}</h3>
         <p style="font-size: 13px; margin: 5px 0;"><b>FECHA:</b> {{ pedido.fecha }}</p>
-        <p style="font-size: 13px; margin: 5px 0;"><b>EMBARCACION:</b> {{ pedido.embarcacion }}</p>
+        <p style="font-size: 13px; margin: 5px 0;"><b>EMBARCACIÓN:</b> {{ pedido.embarcacion }}</p>
+        <p style="font-size: 13px; margin: 5px 0;"><b>SOLICITADO POR:</b> {{ pedido.solicitado_por }}</p>
         <p style="font-size: 13px; margin: 8px 0;"><b>PRIORIDAD:</b> 
             <span class="badge {{ 'prio-urgente' if pedido.prioridad == 'URGENTE' else 'prio-normal' }}">
                 {{ '🔴 URGENTE' if pedido.prioridad == 'URGENTE' else '🟢 NORMAL' }}
