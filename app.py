@@ -1,6 +1,6 @@
 from flask import Flask, render_template_string, request, redirect, url_for
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 app = Flask(__name__)
 app.secret_key = "kvnex_marine_key"
@@ -75,9 +75,12 @@ ESTILOS = """
     .input-tabla:focus { background: #e3f2fd; }
     .col-item { width: 45px; text-align: center; background: #f9f9f9; font-weight: bold; color: #1e3c72; }
     .col-cant { width: 90px; }
-    .badge { padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; }
-    .bg-ok { background: #d4edda; color: #155724; }
-    .bg-wait { background: #f8d7da; color: #721c24; }
+    
+    .badge { padding: 5px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; }
+    .bg-ok { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .bg-wait { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .prio-urgente { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
+    .prio-normal { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
 </style>
 """
 
@@ -152,16 +155,17 @@ BUSCAR_HTML = ESTILOS + """
     </form>
 
     {% if pedido %}
-    <div style="border: 2px solid #1e3c72; padding: 15px; border-radius: 10px; position: relative;">
+    <div style="border: 2px solid #1e3c72; padding: 15px; border-radius: 10px; position: relative; background: #fff;">
         <div onclick="loginAdm({{ pedido.id }})" style="position: absolute; right: 10px; top: 10px; cursor: pointer; color: #bbb; font-size: 10px;">[ ADM ]</div>
-        <h3>VALE #{{ pedido.id }}</h3>
-        <p style="font-size: 13px; margin: 5px 0;"><b>FECHA:</b> {{ pedido.fecha }} | <b>NAVE:</b> {{ pedido.embarcacion }}</p>
-        <p style="font-size: 13px; margin: 5px 0;"><b>SOLICITADO POR:</b> {{ pedido.solicitado_por }}</p>
-        <p style="font-size: 13px; margin: 5px 0;"><b>PRIORIDAD:</b> 
+        <h3 style="margin-top: 0;">VALE #{{ pedido.id }}</h3>
+        <p style="font-size: 13px; margin: 5px 0;"><b>FECHA:</b> {{ pedido.fecha }}</p>
+        <p style="font-size: 13px; margin: 5px 0;"><b>NAVE:</b> {{ pedido.embarcacion }}</p>
+        <p style="font-size: 13px; margin: 5px 0;"><b>SOLICITANTE:</b> {{ pedido.solicitado_por }}</p>
+        <p style="font-size: 13px; margin: 8px 0;"><b>PRIORIDAD:</b> 
             {% if pedido.prioridad == 'URGENTE' %}
-                <span style="color: #dc3545; font-weight: bold;">🔴 URGENTE</span>
+                <span class="badge prio-urgente">🔴 URGENTE</span>
             {% else %}
-                <span style="color: #28a745; font-weight: bold;">🟢 NORMAL</span>
+                <span class="badge prio-normal">🟢 NORMAL</span>
             {% endif %}
         </p>
         <hr>
@@ -181,9 +185,9 @@ BUSCAR_HTML = ESTILOS + """
                 {% for m in materiales %}
                 <tr>
                     <td class="col-item">{{ m.item }}</td>
-                    <td style="text-align: center; font-size: 13px;">{{ m.cantidad }}</td>
+                    <td style="text-align: center; font-size: 13px; padding: 8px;">{{ m.cantidad }}</td>
                     <td style="padding: 8px; font-size: 13px;">{{ m.descripcion }}</td>
-                    <td style="text-align: center;">
+                    <td style="text-align: center; padding: 8px;">
                         <span class="badge {{ 'bg-ok' if m.entregado else 'bg-wait' }}">
                             {{ 'ENTREGADO' if m.entregado else 'PENDIENTE' }}
                         </span>
@@ -193,7 +197,7 @@ BUSCAR_HTML = ESTILOS + """
             </tbody>
         </table>
     </div>
-    {% elif error %}<p style="color: red; font-weight: bold;">{{ error }}</p>{% endif %}
+    {% elif error %}<p style="color: red; font-weight: bold; text-align: center;">{{ error }}</p>{% endif %}
 </div>
 <script>
     function loginAdm(id) {
@@ -221,7 +225,7 @@ ADMIN_HTML = ESTILOS + """
                 {% for m in materiales %}
                 <tr>
                     <td class="col-item">{{ m.item }}</td>
-                    <td style="padding-left: 10px; font-size: 13px;">{{ m.descripcion }}</td>
+                    <td style="padding-left: 10px; font-size: 13px; padding: 8px;">{{ m.descripcion }}</td>
                     <td style="text-align: center;">
                         <input type="checkbox" name="mat_{{ m.id }}" style="transform: scale(1.3);" {{ 'checked' if m.entregado }}>
                     </td>
@@ -230,7 +234,7 @@ ADMIN_HTML = ESTILOS + """
             </tbody>
         </table>
         <button type="submit" class="btn btn-green">GUARDAR CAMBIOS</button>
-        <div style="text-align: center; margin-top: 15px;"><a href="/buscar?id={{ pedido.id }}" style="color: #ccc; font-size: 12px;">← Cancelar</a></div>
+        <div style="text-align: center; margin-top: 15px;"><a href="/buscar?id={{ pedido.id }}" style="color: #ccc; font-size: 12px; text-decoration: none;">← Cancelar</a></div>
     </form>
 </div>
 """
@@ -243,7 +247,10 @@ def index():
 @app.route("/guardar_pedido", methods=["POST"])
 def guardar_pedido():
     f = request.form
-    fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
+    # AJUSTE HORA GMT-5
+    tz_peru = timezone(timedelta(hours=-5))
+    fecha = datetime.now(tz_peru).strftime("%d/%m/%Y %H:%M")
+    
     conn = sqlite3.connect('pedidos.db')
     cursor = conn.cursor()
     cursor.execute("INSERT INTO pedidos (fecha, embarcacion, prioridad, solicitado_por) VALUES (?,?,?,?)",
@@ -259,7 +266,7 @@ def guardar_pedido():
                 item_n += 1
     conn.commit()
     conn.close()
-    return f"<script>alert('Vale N° {p_id} registrado'); window.location.href='/';</script>"
+    return f"<script>alert('Vale N° {p_id} registrado correctamente'); window.location.href='/';</script>"
 
 @app.route("/buscar")
 def buscar():
