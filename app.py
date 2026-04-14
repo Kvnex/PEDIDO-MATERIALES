@@ -89,7 +89,7 @@ REGISTRO_HTML = ESTILOS + """
     <form method="POST" action="/guardar_pedido">
         <div class="form-row">
             <div class="form-group">
-                <label>Embarcación / Nave</label>
+                <label>Embarcación</label>
                 <input type="text" name="embarcacion" required>
             </div>
             <div style="width: 160px;">
