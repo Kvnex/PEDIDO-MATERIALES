@@ -95,8 +95,8 @@ REGISTRO_HTML = ESTILOS + """
             <div style="width: 160px;">
                 <label>Prioridad</label>
                 <select name="prioridad">
-                    <option value="NORMAL">NORMAL</option>
-                    <option value="URGENTE">URGENTE</option>
+                    <option value="NORMAL">🟢 NORMAL</option>
+                    <option value="URGENTE">🔴 URGENTE</option>
                 </select>
             </div>
         </div>
