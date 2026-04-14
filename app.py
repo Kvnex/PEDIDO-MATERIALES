@@ -67,7 +67,7 @@ REGISTRO_HTML = ESTILOS + """
             </tbody>
         </table>
         <button type="button" class="btn btn-add" onclick="agregarFila()">+ Fila</button>
-        <button type="submit" class="btn btn-green">⚓ GRABAR PEDIDO EN LA NUBE</button>
+        <button type="submit" class="btn btn-green">⚓ GRABAR PEDIDO</button>
     </form>
 </div>
 <script>
